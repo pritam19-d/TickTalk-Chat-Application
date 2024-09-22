@@ -1,6 +1,6 @@
 {
-  "short_name": "Chat Application",
-  "name": "A real time Chat Application",
+  "short_name": "Tick-n-Talk",
+  "name": "A real time Chat Application, based on MERN tools",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,7 +8,7 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "Alogo.png",
       "type": "image/png",
       "sizes": "192x192"
     },
