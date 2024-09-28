@@ -47,7 +47,7 @@ const Homepage = () => {
 				borderWidth="1px"
 			>
 				<Tabs isFitted variant="soft-rounded" >
-					<TabList colorScheme="green">
+					<TabList colorscheme="green">
 						<Tab>Login</Tab>
 						<Tab>Sign Up</Tab>
 					</TabList>

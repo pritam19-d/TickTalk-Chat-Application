@@ -1,4 +1,5 @@
 import {
+	Avatar,
 	Button,
 	FormControl,
 	FormLabel,
@@ -7,25 +8,63 @@ import {
 	InputRightElement,
 	Text,
 	VStack,
+	useToast
 } from "@chakra-ui/react";
 import React, { useState } from "react";
+import { useRegisterMutation, useUploadUserDpMutation } from "../../slicers/usersApiSlice";
 
 const SignUp = () => {
-	const [show, setShow] = useState(false);
+	const [show, setShow] = useState(true);
 
-	const [name, setName] = useState();
-	const [email, setEmail] = useState();
-	const [password, setPassword] = useState();
-	const [confirmPassword, setConfirmPassword] = useState();
-	const [pic, setPic] = useState();
+	const [name, setName] = useState("");
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
+	const [pic, setPic] = useState("")
 
-  const postDetails = (pics)=>{
+  const [uploadUserDp, {isLoading: loadingUpload}] = useUploadUserDpMutation()
+  const [register, { isLoading: loadingRegister }] = useRegisterMutation()
+
+	const toast = useToast()
+	const showToast = (title, description = "", status)=>{
+		return toast({
+			title: title,
+			description: description,
+			status: status,
+			duration: description==="success" ? 3000 : 5000,
+			isClosable: true,
+			variant : "subtle"
+		})
+	}
+
+	const uploadFileHandler = async (e)=>{
+    const formData = new FormData()
+    formData.append("image", e.target.files[0]);
+    try {
+			const res = await uploadUserDp(formData).unwrap()
+			setPic(res.secure_url)
+			showToast("DP Uploaded successfully", res.message || "There might be some issue occour while showing your DP", "success" )
+    } catch (err) {
+			showToast("Error Occoured!", err?.data?.message || err.error, "error")
+    }
   }
   
-  // const submitHandler = (e)=>{
-  //   e.preventDefault
-  //   console.log("form submitted!");
-  // }
+  const submitHandler = async (e)=>{
+    e.preventDefault()
+		if (password !== confirmPassword) {
+      showToast("Check Password!", "Please retype the 'Confirm Password' correctly", "warning")
+    } else if (password.length < 6){
+			showToast("Check Password!", "Your password must contains atleast 6 characters", "warning")
+    } else {
+      try {
+        const res = await register({ name, email, password, pic }).unwrap()
+				console.log(res)
+				showToast("Signed Up successfully!", "Cheers! your form has been submitted", "success" )
+      } catch (err) {
+				showToast("Unable to Sign Up!", err?.data?.message || err.error, "error")
+      }
+    }
+  }
 
 	return (
 		<VStack spacing="5px">
@@ -71,19 +110,24 @@ const SignUp = () => {
 					value={confirmPassword}
 					onChange={(e) => setConfirmPassword(e.target.value)}
 				/>
-				<FormLabel id="displayPic" isRequired>
+				<FormLabel id="displayPic">
 					Display picture
 				</FormLabel>
+				<InputGroup>
 				<Input
+				  width="90%"
 					type="file"
 					p={1.5}
 					accept="image/*"
-					value={pic}
-					onChange={(e) => postDetails(e.target.files[0])}
-				/>
+					onChange={uploadFileHandler}
+					/>
+					<InputRightElement width="4.5rem">
+						<Avatar src={pic} />
+					</InputRightElement>
+				</InputGroup>
 			</FormControl>
 			<Text color="red">* Marked fields are the mandatory field.</Text>
-      <Button colorScheme="blue" w="80%" mt="15">
+      <Button colorScheme="blue" w="80%" mt="15" onClick={submitHandler} isLoading={loadingUpload || loadingRegister}>
         Sign Up
       </Button>
 		</VStack>

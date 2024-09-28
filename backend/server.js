@@ -6,10 +6,11 @@ import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
 import colors from "colors";
 import userRoutes from "./routes/userRoutes.js"
+import uploadRoutes from "./routes/uploadRoutes.js"
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 const PORT = process.env.PORT || 8000;
 
-connectDB()
+connectDB() //connect to MongoDB database
 
 const app = express()
 
@@ -32,7 +33,8 @@ app.get("/api/chats/:id", (req, res)=>{
   res.send(chat)
 })
 
-app.use("/api/user", userRoutes)
+app.use("/api/users", userRoutes);
+app.use("/api/upload", uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

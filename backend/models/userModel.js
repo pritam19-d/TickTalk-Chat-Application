@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  dp:{
+  pic:{
     type:String,
     required: true,
     default: "https://www.svgrepo.com/show/335455/profile-default.svg"
