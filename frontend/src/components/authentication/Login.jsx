@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	FormControl,
 	FormLabel,
@@ -8,18 +8,59 @@ import {
 	Button,
 	InputGroup,
 	Text,
+	useToast,
 } from "@chakra-ui/react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useLoginMutation } from "../../slicers/usersApiSlice";
+import { setCredentials } from "../../slicers/authSlice";
 
 const Login = () => {
-	const [show, setShow] = useState(false);
+	const [show, setShow] = useState(true);
 
 	const [email, setEmail] = useState();
 	const [password, setPassword] = useState();
 
-  // const submitHandler = (e)=>{
-  //   e.preventDefault
-  //   console.log("form submitted!");
-  // }
+	const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [login, { isLoading }] = useLoginMutation()
+
+	const { userInfo } = useSelector((state) => state.auth)
+
+	const { search } = useLocation()
+  const sp = new URLSearchParams(search)
+  const redirect = sp.get("redirect") || "/chats"
+
+	useEffect(() => {
+    if (userInfo) {
+      navigate(redirect)
+    }
+  }, [userInfo, redirect, navigate])
+
+	const toast = useToast()
+	const showToast = (title, description = "", status)=>{
+		return toast({
+			title: title,
+			description: description,
+			status: status,
+			duration: description==="success" ? 3000 : 5000,
+			isClosable: true,
+			variant : "subtle"
+		})
+	}
+
+	const loginSubmitHandler = async (e)=>{
+    e.preventDefault()
+		try {
+			const res = await login({ email, password }).unwrap()
+			dispatch(setCredentials({ ...res }))
+      navigate(redirect)
+		} catch (err) {
+			showToast("Unable to Log you in!", err?.data?.message || err.error, "error")
+		}
+  }
+
 
 	return (
 		<VStack spacing="5px">
@@ -49,8 +90,8 @@ const Login = () => {
 				</InputGroup>
 			</FormControl>
 			<Text color="red">* Marked fields are the mandatory field.</Text>
-			<Button colorScheme="blue" w="60%" mt="15">
-				Sign Up
+			<Button colorScheme="blue" w="60%" mt="15" onClick={loginSubmitHandler} isLoading={isLoading}>
+				Sign In
 			</Button>
 		</VStack>
 	);

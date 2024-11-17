@@ -10,7 +10,10 @@ import {
 	VStack,
 	useToast
 } from "@chakra-ui/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router-dom";
+import { setCredentials } from "../../slicers/authSlice.js";
 import { useRegisterMutation, useUploadUserDpMutation } from "../../slicers/usersApiSlice";
 
 const SignUp = () => {
@@ -20,10 +23,25 @@ const SignUp = () => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
-	const [pic, setPic] = useState("")
+	const [pic, setPic] = useState("");
+
+	const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [uploadUserDp, {isLoading: loadingUpload}] = useUploadUserDpMutation()
   const [register, { isLoading: loadingRegister }] = useRegisterMutation()
+
+  const { userInfo } = useSelector((state) => state.auth)
+
+	const { search } = useLocation()
+  const sp = new URLSearchParams(search)
+  const redirect = sp.get("redirect") || "/chats"
+
+	useEffect(() => {
+    if (userInfo) {
+      navigate(redirect)
+    }
+  }, [userInfo, redirect, navigate])
 
 	const toast = useToast()
 	const showToast = (title, description = "", status)=>{
@@ -58,8 +76,10 @@ const SignUp = () => {
     } else {
       try {
         const res = await register({ name, email, password, pic }).unwrap()
-				console.log(res)
-				showToast("Signed Up successfully!", "Cheers! your form has been submitted", "success" )
+				showToast("Signed Up successfully!", `Cheers ${res.name}! your details have been saved successfully.`, "success" )
+				// redirection to chats page needs to added
+				dispatch(setCredentials({ ...res }))
+        navigate(redirect)
       } catch (err) {
 				showToast("Unable to Sign Up!", err?.data?.message || err.error, "error")
       }
@@ -115,7 +135,7 @@ const SignUp = () => {
 				</FormLabel>
 				<InputGroup>
 				<Input
-				  width="90%"
+				  width="91%"
 					type="file"
 					p={1.5}
 					accept="image/*"

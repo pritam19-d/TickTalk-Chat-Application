@@ -1,4 +1,4 @@
-import asyncHandler from "express-async-handler"
+import asyncHandler from "express-async-handler";
 import User from "../models/userModel.js";
 import generateToken from "../utils/generateToken.js";
 
@@ -11,7 +11,6 @@ const registerUser = asyncHandler(async (req, res)=>{
     res.status(400);
     throw new Error("Please fill out all the mandatory fields")
   }
-
   const usrExist = await User.findOne({ email })
   if (usrExist){
     res.status(400)
@@ -55,6 +54,18 @@ const authUser = asyncHandler(async (req, res)=>{
   }
 })
 
+// /api/user?search=pritam
+const allUsers = asyncHandler( async(req, res)=> {
+  const keyword = req.query.search ? {
+    $or: [
+      {name : { $regex: req.query.search, $options: "i"}},
+      {email : { $regex: req.query.search, $options: "i"}}
+    ]
+  } : {}
+  const users = await User.find(keyword).find({_id:{ $ne:req.user._id }})
+  res.send(users);
+});
 
 
-export { registerUser, authUser }
+
+export { registerUser, authUser, allUsers }
