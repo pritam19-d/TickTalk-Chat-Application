@@ -25,9 +25,6 @@ app.get("/",(req, res)=>{
   res.send("API is Running.")
 })
 
-// app.get("/api/chats", (req, res)=>{
-//   res.send(chats)
-// })
 
 // app.get("/api/chats/:id", (req, res)=>{
 //   const chat = chats.find((cht)=> cht._id === req.params.id)

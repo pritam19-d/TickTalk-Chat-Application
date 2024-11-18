@@ -54,6 +54,15 @@ const authUser = asyncHandler(async (req, res)=>{
   }
 })
 
+//Logout User Controller
+const logoutUser = asyncHandler (async (req, res)=>{
+  res.cookie("jwt", "",{
+    httpOnly: true,
+    expires: new Date(0)
+  })
+  res.status(200).json({ message: "Logged out Successfully!"})
+})
+
 // /api/user?search=pritam
 const allUsers = asyncHandler( async(req, res)=> {
   const keyword = req.query.search ? {
@@ -68,4 +77,4 @@ const allUsers = asyncHandler( async(req, res)=> {
 
 
 
-export { registerUser, authUser, allUsers }
+export { registerUser, authUser, logoutUser, allUsers }
