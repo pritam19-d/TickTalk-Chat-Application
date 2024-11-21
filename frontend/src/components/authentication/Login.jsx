@@ -17,7 +17,6 @@ import { setCredentials } from "../../slicers/authSlice";
 
 const Login = () => {
 	const [show, setShow] = useState(true);
-
 	const [email, setEmail] = useState();
 	const [password, setPassword] = useState();
 

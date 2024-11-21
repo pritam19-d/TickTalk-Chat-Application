@@ -13,12 +13,15 @@ import "./index.css";
 import App from "./App";
 import Homepage from "./Pages/Homepage";
 import Chatpage from "./Pages/Chatpage";
+import PrivateRoute from "./Context/PrivateRoute";
 
 const router = createBrowserRouter(
 	createRoutesFromElements(
 		<Route path="/" element={<App />}>
 			<Route index={true} path="/" element={<Homepage />} />
-			<Route index={true} path="/chats" element={<Chatpage />} />
+			<Route path="" element={<PrivateRoute />}>
+				<Route index={true} path="/chats" element={<Chatpage />} />
+			</Route>
 		</Route>
 	)
 );
