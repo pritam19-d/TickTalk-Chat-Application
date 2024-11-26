@@ -63,16 +63,18 @@ const logoutUser = asyncHandler (async (req, res)=>{
   res.status(200).json({ message: "Logged out Successfully!"})
 })
 
-// /api/user?search=pritam
+// /api/user?keyword=pritam
 const allUsers = asyncHandler( async(req, res)=> {
-  const keyword = req.query.search ? {
+  const keyword = req.query.keyword ? {
     $or: [
-      {name : { $regex: req.query.search, $options: "i"}},
-      {email : { $regex: req.query.search, $options: "i"}}
+      {name : { $regex: req.query.keyword, $options: "i"}},
+      {email : { $regex: req.query.keyword, $options: "i"}}
     ]
   } : {}
-  const users = await User.find(keyword).find({_id:{ $ne:req.user._id }})
-  res.send(users);
+  
+  const users = await User.find({...keyword}).find({_id:{ $ne:req.user._id }})
+  console.log(`Key Params:${req.query.keyword}`);
+  res.status(200).send(users);
 });
 
 

@@ -40,9 +40,10 @@ export const usersApiSlice = apiSlice.injectEndpoints({
       })
     }),
     getUsers : builder.query({
-      query: ()=>({
-        url: USERS_URL,
-        method: "GET"
+      query: ({ search })=>({
+        url: `${USERS_URL}/?keyword=${search}`,
+        method: "GET",
+        params: {search}
       }),
       providesTags: ["Users"],
       keepUnusedDataFor: 5
@@ -53,12 +54,12 @@ export const usersApiSlice = apiSlice.injectEndpoints({
     //     method: "DELETE"
     //   })
     // }),
-    getUserDetail: builder.query({
-      query: (userId)=>({
-        url: `${USERS_URL}/${userId}`
-      }),
-      keepUnusedDataFor: 5
-    }),
+    // getUserDetail: builder.query({
+    //   query: (userId)=>({
+    //     url: `${USERS_URL}/${userId}`
+    //   }),
+    //   keepUnusedDataFor: 5
+    // }),
     updateUser: builder.mutation({
       query: (data)=>({
         url: `${USERS_URL}/${data.userId}`,

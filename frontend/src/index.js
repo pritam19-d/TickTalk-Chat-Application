@@ -21,6 +21,7 @@ const router = createBrowserRouter(
 			<Route index={true} path="/" element={<Homepage />} />
 			<Route path="" element={<PrivateRoute />}>
 				<Route index={true} path="/chats" element={<Chatpage />} />
+				<Route path="/search/:keyword" element={<Chatpage />} />
 			</Route>
 		</Route>
 	)
