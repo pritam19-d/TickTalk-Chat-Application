@@ -29,7 +29,6 @@ const Header = () => {
 	const { userInfo } = useSelector((state) => state.auth);
   const { keyword: urlKeyword } = useParams()
   const { data, isLoading, error } = useGetUsersQuery(urlKeyword);
-  // const { data } = useGetUsersQuery(urlKeyword)
   
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
@@ -70,8 +69,8 @@ const Header = () => {
 
     try {
       if(search.trim()){
-        console.log(urlKeyword);
         navigate(`/search/${search}`)
+        console.log(urlKeyword);
         console.log(data);
         // console.log(urlKeyword);
         

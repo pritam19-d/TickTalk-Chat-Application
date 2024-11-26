@@ -40,7 +40,7 @@ export const usersApiSlice = apiSlice.injectEndpoints({
       })
     }),
     getUsers : builder.query({
-      query: ({ search })=>({
+      query: ( search )=>({
         url: `${USERS_URL}/?keyword=${search}`,
         method: "GET",
         params: {search}
