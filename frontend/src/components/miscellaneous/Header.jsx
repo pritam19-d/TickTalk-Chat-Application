@@ -24,17 +24,20 @@ import { useGetUsersQuery, useLogoutMutation } from "../../slicers/usersApiSlice
 import { useNavigate, useParams } from "react-router-dom";
 import { logout } from "../../slicers/authSlice";
 import ProfileModel from "./ProfileModel";
+import ChatLoading from "../ChatLoading";
+import UserListItem from "../UserAvatar/UserListItem";
 
 const Header = () => {
-	const { userInfo } = useSelector((state) => state.auth);
   const { keyword: urlKeyword } = useParams()
-  const { data, isLoading, error } = useGetUsersQuery(urlKeyword);
+	const [search, setSearch] = useState(urlKeyword || "");
+
+	const { userInfo } = useSelector((state) => state.auth);
+	
+  const { data, isLoading, error } = useGetUsersQuery(search);
   
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const toast = useToast();
-  
-	const [search, setSearch] = useState(urlKeyword || "");
 
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const btnRef = useRef();
@@ -61,7 +64,7 @@ const Header = () => {
 		}
 	};
 
-  const handleSearch = async ()=>{
+  const handleSearch = ()=>{
     if(search.length < 3){
       toast({title :"Please enter at least 3 letters to search", status: "warning", position: "top-left" })
       return;
@@ -70,11 +73,8 @@ const Header = () => {
     try {
       if(search.trim()){
         navigate(`/search/${search}`)
-        console.log(urlKeyword);
-        console.log(data);
-        // console.log(urlKeyword);
-        
       }else{
+				toast({title:"Something went wrong", status: "error", position: "top-left"})
         navigate("/")
       }
     } catch (err) {
@@ -145,11 +145,22 @@ const Header = () => {
 								placeholder="Search by name or email"
 								mr={2}
 								value={search}
-								onChange={(e) => setSearch(e.target.value)}
+								onChange={e => setSearch(e.target.value)}
 							/>
               <Button onClick={handleSearch}>
                 <Search2Icon />
               </Button>
+						</Box>
+						<Box>
+							{isLoading? <ChatLoading style={{borderWidth:"2px"}} />
+								:	error && search > 2 ? toast({title: "Something went Wrong", status: "error"})
+								: data?.map(user => 
+									<UserListItem 
+										key={user._id}
+										user={user}
+									/>
+								)
+							}
 						</Box>
 					</DrawerBody>
 				</DrawerContent>

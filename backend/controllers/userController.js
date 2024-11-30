@@ -72,8 +72,13 @@ const allUsers = asyncHandler( async(req, res)=> {
     ]
   } : {}
   
-  const users = await User.find({...keyword}).find({_id:{ $ne:req.user._id }})
-  res.status(200).send(users);
+  if (req.query.keyword.length > 2){
+    const users = await User.find({...keyword}).find({_id:{ $ne:req.user._id }}).select("-password");
+    res.status(200).send(users);
+  } else {
+    res.status(204)
+    throw new Error("Search letter insufficient")
+  }
 });
 
 
