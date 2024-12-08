@@ -7,3 +7,16 @@
   background-size: cover;
   background-position:center;
 }
+
+::-webkit-scrollbar {
+  width: 0
+}
+
+::-webkit-scrollbar-thumb {
+  background: #fffbc4; /* Light yellow thumb */
+  border-radius: 4px; /* Rounded corners */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fff8a0; /* Slightly darker yellow on hover */
+}

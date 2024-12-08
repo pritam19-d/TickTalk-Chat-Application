@@ -1,19 +1,24 @@
-import { Avatar, Box, Text } from "@chakra-ui/react"
+import { Avatar, Box, Spinner, Text, useToast } from "@chakra-ui/react"
 import React from 'react'
 import { useCreateChatMutation } from "../../slicers/chatsApiSlice";
 
 const UserListItem = ({ user }) => {
 
-  const [ createChat, isLoading, error ] = useCreateChatMutation();
+  const [ createChat, { isLoading }] = useCreateChatMutation();
 
+	const toast = useToast();
 
   const handleClick = async ()=>{
-    console.log(`Clicked userID is---> ${user._id}`);
     try {
       const chatData = await createChat({"userId": user._id}).unwrap()
-      console.log(chatData);
+      console.log(chatData._id);
     } catch (err) {
-      console.log(`Error--> ${err?.data?.message || err.error}`);
+      toast({
+        title: "Error Occoured",
+				description: `Error : ${err?.data?.message || err.error}`,
+				status: "error",
+				isClosable: true
+      })
     }
   }
 
@@ -32,14 +37,15 @@ const UserListItem = ({ user }) => {
       padding="5% 4%"
       mb={2}
       borderRadius="lg"
-    >
-      <Avatar
+    >{isLoading ? <Spinner size="lg" mr={2} color="blue.600" thickness="4px" /> 
+      : <Avatar
         mr={2}
         size="sm"
         cursor="pointer"
         src={user.pic}
         name={user.name}
       />
+      }
       <Box>
         <Text mb={0}><b>{user.name}</b></Text>
         <Text fontSize="xs" mb={0}>

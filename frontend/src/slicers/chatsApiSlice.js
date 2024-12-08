@@ -12,7 +12,15 @@ export const chatsApiSlice = apiSlice.injectEndpoints({
       providesTags: ["Chats"],
       keepUnusedDataFor: 5
     }),
+    getAllChats : builder.query({
+      query : ()=> ({
+        url : `${CHATS_URL}`,
+        method: "GET",
+      }),
+      providesTags: ["Chats"],
+      keepUnusedDataFor: 5
+    })
   })
 })
 
-export const { useCreateChatMutation } = chatsApiSlice
+export const { useCreateChatMutation, useGetAllChatsQuery } = chatsApiSlice
