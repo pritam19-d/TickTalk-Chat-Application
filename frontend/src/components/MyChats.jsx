@@ -5,12 +5,13 @@ import { useGetAllChatsQuery } from "../slicers/chatsApiSlice";
 import ChatLoading from "./ChatLoading";
 import { getSenderName } from "../config/ChatLogic";
 import { useSelector } from "react-redux";
+import GroupChatModel from "./miscellaneous/GroupChatModel";
 
 const MyChats = () => {
 	const [selectedChat, setSelectedChat] = useState("");
 	const { userInfo } = useSelector((state) => state.auth);
 
-	const { data: allChats, refetch, isLoading, error } = useGetAllChatsQuery();
+	const { data: allChats, refetch, isLoading } = useGetAllChatsQuery();
 
 	return (
 		<Box
@@ -30,15 +31,18 @@ const MyChats = () => {
 				width="100%"
 				alignItems="center"
 				justifyContent="space-between"
+        pb="2%"
 			>
 				My chats
-				<Button
-					display="flex"
-					fontSize={{ base: "17px", md: "10px", lg: "17px" }}
-					rightIcon={<AddIcon />}
-				>
-					New Group Chat
-				</Button>
+        <GroupChatModel>
+          <Button
+            display="flex"
+            fontSize={{ base: "17px", md: "10px", lg: "17px" }}
+            rightIcon={<AddIcon />}
+          >
+            New Group Chat
+          </Button>
+        </GroupChatModel>
 			</Box>
 			<Box display="flex" flexDir="column" width="100%">
 				{isLoading ? (
@@ -55,19 +59,19 @@ const MyChats = () => {
 									background: "#FCFFE1",
 								}}
 								display="flex"
-								alignContent="center"
+								alignItems="center"
 								color="black"
 								padding="5% 4%"
 								borderRadius="lg"
 							>
 								<Avatar
 									mr={2}
-									size="sm"
+									size="md"
 									cursor="pointer"
 									src={getSenderName(userInfo, chat.users).pic}
                   border="1px solid white"
 								/>
-								<Text>
+								<Text m={0} fontSize={{ base: "17px", md: "10px", lg: "17px" }}>
 									{chat.isGroupChat
 										? chat.chatName
 										: getSenderName(userInfo, chat.users).name}
