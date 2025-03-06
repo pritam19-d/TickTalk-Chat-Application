@@ -20,24 +20,22 @@ import {
 	useDisclosure,
 	useToast,
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useGetUsersQuery } from "../../slicers/usersApiSlice";
 import { useSelector } from "react-redux";
 import { AddIcon, CloseIcon } from "@chakra-ui/icons";
+import { useCreateGroupChatMutation } from "../../slicers/chatsApiSlice";
 
-const GroupChatModel = ({ children }) => {
+const GroupChatModel = ({ children, refresh }) => {
 	const [search, setSearch] = useState("");
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const [groupName, setGroupName] = useState("");
 	const [userList, setUserList] = useState([]);
-
 	const toast = useToast();
 
 	const { userInfo } = useSelector((state) => state.auth);
-
 	const { data, isLoading, error } = useGetUsersQuery(search);
-
-	const handleSearch = () => {};
+	const  [createGroupChat, {isLoading: loadingCreate}] = useCreateGroupChatMutation()
 
 	const handleGroup = (userToAdd) => {
 		setUserList(
@@ -46,14 +44,23 @@ const GroupChatModel = ({ children }) => {
 					? prevList.filter((user) => user._id !== userToAdd._id) // Remove user by ID
 					: [...prevList, userToAdd] // Add user if not already present
 		);
-		// setIcon(CloseIcon);
 	};
-	useEffect(() => {
-		console.log(userList);
-	}, [userList]);
 
-	const handleSubmit = () => {
-		console.log(data);
+	const handleSubmit = async (e) => {
+		e.preventDefault()
+		const body = {
+			name: groupName,
+			users : JSON.stringify(userList.map(user => user._id))
+		};
+		try {
+			const res = await createGroupChat(body).unwrap();
+			toast({title: "Chat Created Successfully!", description: `Your new Group Chat named "${res.chatName}" has been created.`, status: "success" })
+			refresh();
+			onClose();
+		} catch (err) {
+			console.log(err);
+			toast({ title: "Unable to create group", description: "Due to some internal error we're unable to create group.", status: "warning" })
+		}
 	};
 
 	return (
@@ -83,8 +90,6 @@ const GroupChatModel = ({ children }) => {
 						<Text className="my-0" fontSize="0.8rem" color="tomato" hidden={userList.length >= 2}>
 							You need to select more than one user to create a group
 						</Text>
-						{/* selected users
-            render searched users */}
 						<Box>
 							{isLoading ? (
 								<h5>Loading...</h5>
@@ -129,9 +134,9 @@ const GroupChatModel = ({ children }) => {
 							colorScheme="blue"
 							mr={3}
 							onClick={handleSubmit}
-							isDisabled={userList.length <= 1 || !groupName}
+							isDisabled={userList.length <= 1 || !groupName || loadingCreate}
 						>
-							Create Chat
+							{loadingCreate? "Creating" : "Create"} Chat{loadingCreate && "..."}
 						</Button>
 					</ModalFooter>
 				</ModalContent>

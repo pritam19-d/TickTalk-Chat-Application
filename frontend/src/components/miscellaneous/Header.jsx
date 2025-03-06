@@ -71,9 +71,9 @@ const Header = () => {
     }
 
     try {
-      if(search.trim()){
+      if (search.trim()){
         navigate(`/search/${search}`)
-      }else{
+      } else {
 				toast({title:"Something went wrong", status: "error", position: "top-left"})
         navigate("/")
       }

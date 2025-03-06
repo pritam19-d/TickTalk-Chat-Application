@@ -19,8 +19,15 @@ export const chatsApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ["Chats"],
       keepUnusedDataFor: 5
+    }),
+    createGroupChat: builder.mutation({
+      query : (data)=> ({
+        url : `${CHATS_URL}/group`,
+        method: "POST",
+        body: data
+      })
     })
   })
 })
 
-export const { useCreateChatMutation, useGetAllChatsQuery } = chatsApiSlice
+export const { useCreateChatMutation, useGetAllChatsQuery, useCreateGroupChatMutation } = chatsApiSlice

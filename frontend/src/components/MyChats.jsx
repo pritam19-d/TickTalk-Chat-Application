@@ -34,7 +34,7 @@ const MyChats = () => {
         pb="2%"
 			>
 				My chats
-        <GroupChatModel>
+        <GroupChatModel refresh={refetch}>
           <Button
             display="flex"
             fontSize={{ base: "17px", md: "10px", lg: "17px" }}
