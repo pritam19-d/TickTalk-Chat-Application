@@ -20,7 +20,7 @@ import {
 	useDisclosure,
 	useToast,
 } from "@chakra-ui/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useGetUsersQuery } from "../../slicers/usersApiSlice";
 import { useSelector } from "react-redux";
 import { AddIcon, CloseIcon } from "@chakra-ui/icons";
@@ -35,7 +35,7 @@ const GroupChatModel = ({ children, refresh }) => {
 
 	const { userInfo } = useSelector((state) => state.auth);
 	const { data, isLoading, error } = useGetUsersQuery(search);
-	const  [createGroupChat, {isLoading: loadingCreate}] = useCreateGroupChatMutation()
+	const  [createGroupChat, {isLoading: loadingCreate}] = useCreateGroupChatMutation();
 
 	const handleGroup = (userToAdd) => {
 		setUserList(
@@ -97,7 +97,7 @@ const GroupChatModel = ({ children, refresh }) => {
 								toast({ title: "Something went Wrong", status: "error" })
 							) : (
 								<HStack spacing={4} display="flex" flexWrap="wrap">
-									{data?.map((user, index) => (
+									{data?.map((user) => (
 										<Tag
 											size="md"
 											key={user._id}

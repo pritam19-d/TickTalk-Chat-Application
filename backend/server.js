@@ -1,5 +1,4 @@
 import express from "express";
-import chats from "./data/data.js";
 import dotenv from "dotenv"
 dotenv.config()
 import cookieParser from "cookie-parser";
@@ -24,12 +23,6 @@ app.use(cookieParser())
 app.get("/",(req, res)=>{
   res.send("API is Running.")
 })
-
-
-// app.get("/api/chats/:id", (req, res)=>{
-//   const chat = chats.find((cht)=> cht._id === req.params.id)
-//   res.send(chat)
-// })
 
 app.use("/api/users", userRoutes);
 app.use("/api/chats", chatRoutes);
