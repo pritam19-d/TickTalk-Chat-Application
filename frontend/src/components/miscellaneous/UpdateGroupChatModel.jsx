@@ -22,10 +22,15 @@ import {
 	useToast,
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
-import { useUpdateGroupNameMutation } from "../../slicers/chatsApiSlice";
+import {
+	useAddUserIntoGroupMutation,
+	useRemoveUserFromGroupMutation,
+	useUpdateGroupNameMutation,
+} from "../../slicers/chatsApiSlice";
 import { useGetUsersQuery } from "../../slicers/usersApiSlice";
+import { useSelector } from "react-redux";
 
-const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat}) => {
+const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat }) => {
 	const { isOpen, onOpen, onClose } = useDisclosure();
 
 	const toast = useToast();
@@ -34,42 +39,102 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat}) => {
 	const [usersInGroup, setUsersInGroup] = useState(currChat?.users);
 	const [search, setSearch] = useState("");
 
+	const { userInfo } = useSelector((state) => state.auth);
+
 	const { data, isLoading, error } = useGetUsersQuery(search);
 
 	const [updateGroupName, { isLoading: loadingUpdate }] =
 		useUpdateGroupNameMutation();
+	const [addUsers, { isLoading: loadingAdd }] = useAddUserIntoGroupMutation();
+	const [removeUsers, { isLoading: loadingRemove }] =
+		useRemoveUserFromGroupMutation();
 
 	useEffect(() => {
 		// setGroupChatName(currChat.chatName);
 		// setUsersInGroup(currChat.users);
-	}, [usersInGroup]);
-	
-	const handleGroup = (userToAdd) => {
-		setUsersInGroup(
-			(prevList) =>
-				prevList.some((user) => user._id === userToAdd._id)
-					? prevList.filter((user) => user._id !== userToAdd._id) // Remove user by ID
-					: [...prevList, userToAdd] // Add user if not already present
-		);
-	};
-	
+		const userModification = async () => {};
 
-	const handleRename = async(e)=>{
+		userModification();
+	}, [usersInGroup]);
+
+	const handleGroup = async (user) => {
+		const body = {
+			chatId: currChat._id,
+			userId: user._id,
+		};
+		try {
+			if (!usersInGroup?.map((user) => user._id).includes(user._id)) {
+				//To check if the user is not present group
+				await addUsers(body).unwrap();
+				setUsersInGroup([...usersInGroup, user])
+				toast({ title: "User Additon Successful!", status: "success" });
+			} else if (usersInGroup.length >= 2) {
+				await removeUsers(body).unwrap();
+				setUsersInGroup(usersInGroup.filter((usr) => usr._id !== user._id));
+				toast({ title: "User Removal Successful!", status: "success" });
+			} else {
+				toast({
+					title: "Unable Remove!",
+					description: `Cannot remove ${user.name}, as there must be at least 3 users to be kept for the group.`,
+					status: "warning",
+				});
+			}
+		} catch (err) {
+			toast({
+				title: "Unable to add/remove user!",
+				description: `Could not Add / Remove the user into / from the group due to "${err?.data?.message || err?.error}".`,
+				status: "error",
+			});
+		}
+	};
+
+	const handleRename = async (e) => {
 		e.preventDefault();
 		const body = {
 			chatId: currChat._id,
-			chatName: groupChatName
-		}
+			chatName: groupChatName,
+		};
 		try {
 			const res = await updateGroupName(body).unwrap();
-			onClose()
-			toast({title: "Group Name Updated Successfully!", description: `Your updated group name is "${res.chatName}".`, status: "success" })
-			refreshAllChat()
-			setCurrChat("")
+			onClose();
+			toast({
+				title: "Group Name Updated Successfully!",
+				description: `Your updated group name is "${res.chatName}".`,
+				status: "success",
+			});
+			refreshAllChat();
+			setCurrChat("");
 		} catch (err) {
-			toast({title: "Unable to update group name!", description: `Could not update the group name due to "${err?.data?.message || err?.error}".`, status: "error" })
+			toast({
+				title: "Unable to update group name!",
+				description: `Could not update the group name due to "${
+					err?.data?.message || err?.error
+				}".`,
+				status: "error",
+			});
 		}
-	}
+	};
+
+	const handleLeave = async (e) => {
+		e.preventDefault();
+		try {
+			const res = await removeUsers({ chatId: currChat._id, userId: userInfo._id });
+			onClose();
+			toast({
+				title: "Leave Successfully!",
+				description: `You have been removed form '${res.data.chatName}' group.`,
+				status: "success",
+			});
+			setCurrChat("");
+			refreshAllChat();
+		} catch (err) {
+			toast({
+				title: "Unable to leave!",
+				description: `Could not Remove you from the group due to "${err?.data?.message || err?.error}".`,
+				status: "error",
+			});
+		}
+	};
 
 	return (
 		<>
@@ -100,9 +165,11 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat}) => {
 								ml={1}
 								isLoading={loadingUpdate}
 								onClick={handleRename}
-								isDisabled={currChat.chatName === groupChatName || loadingUpdate}
+								isDisabled={
+									currChat.chatName === groupChatName.trim() || loadingUpdate
+								}
 							>
-								{loadingUpdate? "Updating..." : "Update"}
+								{loadingUpdate ? "Updating..." : "Update"}
 							</Button>
 						</FormControl>
 						<Box>
@@ -111,18 +178,18 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat}) => {
 									<Tag
 										size="md"
 										key={user._id}
-										variant="subtle"
-										colorScheme={
-											currChat.users.includes(user) ? "green" : "blue"
-										}
+										variant={userInfo._id !== user._id ? "subtle" : "outline"}
+										colorScheme={currChat.users.includes(user) ? "green" : "blue"}
 										cursor="default"
 									>
-										<TagLeftIcon
-											boxSize="12px"
-											as={usersInGroup.includes(user) ? CloseIcon : AddIcon}
-											cursor="pointer"
-											onClick={() => handleGroup(user)}
-										/>
+										{userInfo._id !== user._id && (
+											<TagLeftIcon
+												boxSize="12px"
+												as={usersInGroup.includes(user) ? CloseIcon : AddIcon}
+												cursor="pointer"
+												onClick={() => handleGroup(user)}
+											/>
+										)}
 										<TagLabel>
 											<Avatar
 												size="xs"
@@ -153,40 +220,44 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat}) => {
 								toast({ title: "Something went Wrong", status: "error" })
 							) : (
 								<HStack spacing={4} display="flex" flexWrap="wrap">
-									{data?.map((user) => (
-										!usersInGroup.map(each=> each._id).includes(user._id) &&
-										<Tag
-											size="md"
-											key={user._id}
-											variant="subtle"
-											colorScheme="blue"
-											cursor="default"
-										>
-											<TagLeftIcon
-												boxSize="12px"
-												as={AddIcon}
-												cursor="pointer"
-												onClick={() => handleGroup(user)}
-											/>
-											<TagLabel>
-												<Avatar
-													size="xs"
-													name={user.name}
-													src={user.pic}
-													padding="3px"
-												/>
-											</TagLabel>
-											<Tooltip label={user.email} aria-label="A tooltip">
-												<TagLabel>{user.name}</TagLabel>
-											</Tooltip>
-										</Tag>
-									))}
+									{data?.map(
+										(user) =>
+											!usersInGroup
+												.map((each) => each._id)
+												.includes(user._id) && (
+												<Tag
+													size="md"
+													key={user._id}
+													variant="subtle"
+													colorScheme="blue"
+													cursor="default"
+												>
+													<TagLeftIcon
+														boxSize="12px"
+														as={AddIcon}
+														cursor="pointer"
+														onClick={() => handleGroup(user)}
+													/>
+													<TagLabel>
+														<Avatar
+															size="xs"
+															name={user.name}
+															src={user.pic}
+															padding="3px"
+														/>
+													</TagLabel>
+													<Tooltip label={user.email} aria-label="A tooltip">
+														<TagLabel>{user.name}</TagLabel>
+													</Tooltip>
+												</Tag>
+											)
+									)}
 								</HStack>
 							)}
 						</Box>
 					</ModalBody>
 					<ModalFooter>
-						<Button colorScheme="red" onClick={onClose}>
+						<Button colorScheme="red" onClick={handleLeave}>
 							Leave Group
 						</Button>
 					</ModalFooter>
