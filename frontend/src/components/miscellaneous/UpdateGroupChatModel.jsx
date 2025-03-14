@@ -1,4 +1,4 @@
-import { AddIcon, CloseIcon, ViewIcon } from "@chakra-ui/icons";
+import { AddIcon, CloseIcon, SpinnerIcon, ViewIcon } from "@chakra-ui/icons";
 import {
 	Avatar,
 	Box,
@@ -37,6 +37,7 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat }) => {
 
 	const [groupChatName, setGroupChatName] = useState(currChat?.chatName);
 	const [usersInGroup, setUsersInGroup] = useState(currChat?.users);
+	const [loadingUser, setLoadUser] = useState("");
 	const [search, setSearch] = useState("");
 
 	const { userInfo } = useSelector((state) => state.auth);
@@ -62,6 +63,7 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat }) => {
 			chatId: currChat._id,
 			userId: user._id,
 		};
+		setLoadUser(user._id)
 		try {
 			if (!usersInGroup?.map((user) => user._id).includes(user._id)) {
 				//To check if the user is not present group
@@ -85,6 +87,8 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat }) => {
 				description: `Could not Add / Remove the user into / from the group due to "${err?.data?.message || err?.error}".`,
 				status: "error",
 			});
+		} finally {
+			setLoadUser("");
 		}
 	};
 
@@ -185,7 +189,7 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat }) => {
 										{userInfo._id !== user._id && (
 											<TagLeftIcon
 												boxSize="12px"
-												as={usersInGroup.includes(user) ? CloseIcon : AddIcon}
+												as={loadingRemove && loadingUser===user._id ? SpinnerIcon : CloseIcon}
 												cursor="pointer"
 												onClick={() => handleGroup(user)}
 											/>
@@ -234,7 +238,7 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat }) => {
 												>
 													<TagLeftIcon
 														boxSize="12px"
-														as={AddIcon}
+														as={loadingAdd && loadingUser===user._id ? SpinnerIcon : AddIcon }
 														cursor="pointer"
 														onClick={() => handleGroup(user)}
 													/>
