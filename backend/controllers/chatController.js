@@ -25,7 +25,7 @@ const accessChat = asyncHandler(async (req, res) => {
   if(isChat.length > 0){
     res.send(isChat[0])
   } else {
-    let chatData = {
+    const chatData = {
       chatName : "sender",
       isGroupChat: false,
       users: [req.user._id, userId]
@@ -69,7 +69,7 @@ const createGroupChat = asyncHandler(async (req, res)=>{
     return res.status(400).send({message: "Please fill all the fields."})
   }
 
-  let users = JSON.parse(req.body.users);
+  const users = JSON.parse(req.body.users);
 
   if (users.length < 2 ){
     return res.status(400).send("More than 2 users needed to create a group chat")

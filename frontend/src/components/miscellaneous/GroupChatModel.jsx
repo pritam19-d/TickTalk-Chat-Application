@@ -20,7 +20,7 @@ import {
 	useDisclosure,
 	useToast,
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useGetUsersQuery } from "../../slicers/usersApiSlice";
 import { useSelector } from "react-redux";
 import { AddIcon, CloseIcon } from "@chakra-ui/icons";
