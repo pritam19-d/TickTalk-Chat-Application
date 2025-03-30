@@ -39,8 +39,12 @@ const sendMessage = asyncHandler(async (req, res) => {
 
 const allMessages = asyncHandler(async (req, res)=>{
   try {
-    const messages = await Message.find({chat: req.params.chatId}).populate("sender", "name pic email").populate("chat")
-    res.status(200).json(messages)
+    if (req.params.chatId === "null") {
+      res.status(204).json({message:"No chat is selected"})
+    } else {
+      const messages = await Message.find({chat: req.params.chatId}).populate("sender", "name pic email").populate("chat")
+      res.status(200).json(messages)
+    }
   } catch (err) {
     res.status(400);
     throw new Error(err.message)

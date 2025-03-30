@@ -20,3 +20,10 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #fff8a0; /* Slightly darker yellow on hover */
 }
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  scrollbar-width: none;
+}
