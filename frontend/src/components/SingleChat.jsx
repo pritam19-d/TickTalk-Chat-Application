@@ -1,4 +1,4 @@
-import { ArrowBackIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon, ArrowUpIcon } from "@chakra-ui/icons";
 import {
 	Box,
 	FormControl,
@@ -10,43 +10,92 @@ import {
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import axios from "axios";
+import { io } from "socket.io-client";
 import { getSenderFull, getSenderName } from "../config/ChatLogic";
 import ProfileModel from "./miscellaneous/ProfileModel";
 import UpdateGroupChatModel from "./miscellaneous/UpdateGroupChatModel";
-import {
-	useSendMessageMutation,
-	useGetChatMessageQuery,
-} from "../slicers/messagesApiSlice";
+import { useSendMessageMutation } from "../slicers/messagesApiSlice";
 import ScrollableChat from "./ScrollableChat";
+import { ENDPOINT, MESSAGE_URL } from "../constants";
 
 const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 	const { userInfo } = useSelector((state) => state.auth);
 	const [newMessages, setNewMessages] = useState("");
 	const [messages, setMessages] = useState([]);
+	const [isLoading, setLoading] = useState(false);
+	const [socketConnected, setSocketConnected] = useState(false);
 
+	const socket = io(ENDPOINT)
+	
 	const toast = useToast();
 
 	const [sendMessage, { isLoading: loadingSend }] = useSendMessageMutation();
-	const { data, isLoading, error } = useGetChatMessageQuery(selectedChat?._id);
+
+	const fetchAllMessage = async (selectedChat) => {
+		if (selectedChat?._id) {
+			try {
+				setLoading(true)
+				const res = await axios.get(`${MESSAGE_URL}/${selectedChat._id}`);
+				setMessages(res.data);				
+			} catch (err) {
+				console.log(err);
+				toast({
+					title: "Unable to fetch chats",
+					description: `Unable to fetch your message due to error: "${
+						err?.data?.message || err?.error
+					}".`,
+					status: "error",
+				});
+			} finally {
+				setLoading(false)
+			}
+		}
+	};
 
 	useEffect(()=>{
-		setMessages(data)
-	}, [data])
-	
+		fetchAllMessage(selectedChat)
+	}, [])
+
+	useEffect(() => {		
+		fetchAllMessage(selectedChat)
+		socket.emit("setup", userInfo);
+		socket.on("connection", () => setSocketConnected(true));
+		socket.emit("join chat", selectedChat?._id);
+	}, [selectedChat, userInfo]);
+
+	useEffect(() => {
+		socket.on("message received", (newMessageReceived) => {
+			if (selectedChat?._id !== newMessageReceived.chat._id) {
+				// send notification
+			} else {
+				setMessages(prevMessage => [...prevMessage, newMessageReceived]);
+				// messages.push(newMessageReceived)
+			}
+		});
+	});
+
+	console.log("Real time message-\n",messages);
+
 	const typingHandler = (e) => {
 		setNewMessages(e.target.value);
 	};
 
+	useEffect(()=>{
+		console.log(messages.map(message=> message.content));
+	}, [messages])
+
 	const handleSendMessage = async (e) => {
-		if (newMessages && e.key === "Enter") {
-			const body = {
-				content: newMessages,
-				chatId: selectedChat._id,
-			};
+		const body = {
+			content: newMessages,
+			chatId: selectedChat._id,
+		};
+		if (newMessages && (e.type === "click" || e.key === "Enter")) {
 			try {
 				setNewMessages("");
 				const lastMessage = await sendMessage(body).unwrap();
-				setMessages([...data, lastMessage])
+				socket.emit("new message", lastMessage);
+				setMessages([...messages, lastMessage]);
 			} catch (err) {
 				toast({
 					title: "Failed to send the message!",
@@ -116,10 +165,10 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 							/>
 						) : (
 							<div className="messages">
-								<ScrollableChat messages={data || messages} />
+								<ScrollableChat messages={messages} />
 							</div>
 						)}
-						<FormControl onKeyDown={handleSendMessage} isRequired mt={3}>
+						<FormControl onKeyDown={handleSendMessage} isRequired mt={3} display="flex" alignItems="center">
 							<Input
 								variant="filled"
 								bg="#E0E0E0"
@@ -127,7 +176,7 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 								autoComplete="off"
 								onChange={(e) => typingHandler(e)}
 								value={newMessages}
-							/>
+							/>{ loadingSend ? <Spinner size="lg" marginLeft={2} /> :<ArrowUpIcon boxSize={6} marginLeft={2} onClick={handleSendMessage} cursor="pointer" />}
 						</FormControl>
 					</Box>
 				</>

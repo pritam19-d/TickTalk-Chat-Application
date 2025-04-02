@@ -2,7 +2,7 @@ import { Avatar, Box, Spinner, Text, useToast } from "@chakra-ui/react"
 import React from 'react'
 import { useCreateChatMutation } from "../../slicers/chatsApiSlice";
 
-const UserListItem = ({ user }) => {
+const UserListItem = ({ user, refreshChats, headerClose, setSelectedChat }) => {
 
   const [ createChat, { isLoading }] = useCreateChatMutation();
 
@@ -11,7 +11,9 @@ const UserListItem = ({ user }) => {
   const handleClick = async ()=>{
     try {
       const chatData = await createChat({"userId": user._id}).unwrap()
-      console.log(chatData._id);
+      refreshChats();
+      setSelectedChat(chatData?._id);
+      headerClose();
     } catch (err) {
       toast({
         title: "Error Occoured",

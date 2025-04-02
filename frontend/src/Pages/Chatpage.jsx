@@ -14,16 +14,16 @@ const Chatpage = () => {
 
 	return (
 		<div style={{ width: "100%" }}>
-			{userInfo && <Header />}
-			<Box
-				display="flex"
-				justifyContent="space-between"
-				w="100%"
-				h="90vh"
-				p="10px"
-			>
-				{userInfo && (
-					<>
+			{userInfo && (
+				<>
+					<Header refreshChats={refetch} setSelectedChat={setSelectedChat} />
+					<Box
+						display="flex"
+						justifyContent="space-between"
+						w="100%"
+						h="90vh"
+						p="10px"
+					>
 						<MyChats
 							currentChat={selectedChat}
 							setCurrentChat={setSelectedChat}
@@ -36,9 +36,9 @@ const Chatpage = () => {
 							setCurrentChatFunc={setSelectedChat}
 							refetch={refetch}
 						/>
-					</>
-				)}
-			</Box>
+					</Box>
+				</>
+			)}
 		</div>
 	);
 };

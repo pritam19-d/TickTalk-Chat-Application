@@ -1,14 +1,18 @@
 import React from "react";
 import { Avatar, Box, Button, Stack, Text } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
-import { useGetAllChatsQuery } from "../slicers/chatsApiSlice";
 import ChatLoading from "./ChatLoading";
 import { getSenderName } from "../config/ChatLogic";
 import { useSelector } from "react-redux";
 import GroupChatModel from "./miscellaneous/GroupChatModel";
 
-const MyChats = ({ currentChat, setCurrentChat, allChats, refetch, loading }) => {
-	
+const MyChats = ({
+	currentChat,
+	setCurrentChat,
+	allChats,
+	refetch,
+	loading,
+}) => {
 	const { userInfo } = useSelector((state) => state.auth);
 
 	return (
@@ -51,7 +55,7 @@ const MyChats = ({ currentChat, setCurrentChat, allChats, refetch, loading }) =>
 							<Box
 								key={chat._id}
 								onClick={() => setCurrentChat(chat)}
-								bg={currentChat === chat._id ? "#FFFBC4" : "whitesmoke"}
+								bg={currentChat._id === chat._id ? "#FFFBC4" : "whitesmoke"}
 								cursor="pointer"
 								_hover={{
 									background: "#FCFFE1",

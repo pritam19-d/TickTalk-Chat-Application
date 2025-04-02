@@ -27,8 +27,8 @@ import { AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { useCreateGroupChatMutation } from "../../slicers/chatsApiSlice";
 
 const GroupChatModel = ({ children, refresh }) => {
-	const [search, setSearch] = useState("");
 	const { isOpen, onOpen, onClose } = useDisclosure();
+	const [search, setSearch] = useState("");
 	const [groupName, setGroupName] = useState("");
 	const [userList, setUserList] = useState([]);
 	const toast = useToast();

@@ -27,7 +27,7 @@ import ProfileModel from "./ProfileModel";
 import ChatLoading from "../ChatLoading";
 import UserListItem from "../UserAvatar/UserListItem";
 
-const Header = () => {
+const Header = ({refreshChats, setSelectedChat}) => {
   const { keyword: urlKeyword } = useParams()
 	const [search, setSearch] = useState(urlKeyword || "");
 
@@ -158,6 +158,9 @@ const Header = () => {
 									<UserListItem 
 										key={user._id}
 										user={user}
+										refreshChats={refreshChats}
+										headerClose={onClose}
+										setSelectedChat={setSelectedChat}
 									/>
 								)
 							}
