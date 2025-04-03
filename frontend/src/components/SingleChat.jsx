@@ -10,6 +10,7 @@ import {
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import Lottie from "react-lottie";
 import axios from "axios";
 import { io } from "socket.io-client";
 import { getSenderFull, getSenderName } from "../config/ChatLogic";
@@ -18,26 +19,38 @@ import UpdateGroupChatModel from "./miscellaneous/UpdateGroupChatModel";
 import { useSendMessageMutation } from "../slicers/messagesApiSlice";
 import ScrollableChat from "./ScrollableChat";
 import { ENDPOINT, MESSAGE_URL } from "../constants";
+import * as animationData from "../animation/TypingAnimation.json";
 
 const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
+	const TIMERLENGTH = 2000;
 	const { userInfo } = useSelector((state) => state.auth);
 	const [newMessages, setNewMessages] = useState("");
 	const [messages, setMessages] = useState([]);
 	const [isLoading, setLoading] = useState(false);
 	const [socketConnected, setSocketConnected] = useState(false);
+	const [typing, setTyping] = useState(false);
+	const [isTyping, setIsTyping] = useState(false);
 
-	const socket = io(ENDPOINT)
-	
+	const socket = io(ENDPOINT);
 	const toast = useToast();
+
+	const defaultOptions = {
+		loop: true,
+		autoplay: true,
+		animationData: animationData,
+		rendererSettings: {
+			preserveAspectRatio: "xMidYMid slice",
+		},
+	};
 
 	const [sendMessage, { isLoading: loadingSend }] = useSendMessageMutation();
 
 	const fetchAllMessage = async (selectedChat) => {
 		if (selectedChat?._id) {
 			try {
-				setLoading(true)
+				setLoading(true);
 				const res = await axios.get(`${MESSAGE_URL}/${selectedChat._id}`);
-				setMessages(res.data);				
+				setMessages(res.data);
 			} catch (err) {
 				console.log(err);
 				toast({
@@ -48,20 +61,28 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 					status: "error",
 				});
 			} finally {
-				setLoading(false)
+				setLoading(false);
 			}
 		}
 	};
 
-	useEffect(()=>{
-		fetchAllMessage(selectedChat)
-	}, [])
+	useEffect(() => {
+		fetchAllMessage(selectedChat);
+	}, []);
 
-	useEffect(() => {		
-		fetchAllMessage(selectedChat)
+	useEffect(() => {
+		fetchAllMessage(selectedChat);
 		socket.emit("setup", userInfo);
-		socket.on("connection", () => setSocketConnected(true));
+		socket.on("connected", () => setSocketConnected(true));
 		socket.emit("join chat", selectedChat?._id);
+		socket.on(
+			"typing",
+			({ userId }) => {userId !== userInfo._id && setIsTyping(true)}
+		);
+		socket.on(
+			"stop typing",
+			({ userId }) => {userId !== userInfo._id && setIsTyping(false)}
+		);
 	}, [selectedChat, userInfo]);
 
 	useEffect(() => {
@@ -69,21 +90,34 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 			if (selectedChat?._id !== newMessageReceived.chat._id) {
 				// send notification
 			} else {
-				setMessages(prevMessage => [...prevMessage, newMessageReceived]);
+				setMessages((prevMessage) => [...prevMessage, newMessageReceived]);
 				// messages.push(newMessageReceived)
 			}
 		});
 	});
 
-	console.log("Real time message-\n",messages);
-
 	const typingHandler = (e) => {
 		setNewMessages(e.target.value);
-	};
 
-	useEffect(()=>{
-		console.log(messages.map(message=> message.content));
-	}, [messages])
+		if (!socketConnected) return;
+
+		if (!typing) {
+			setTyping(true);
+			socket.emit("typing", { room: selectedChat._id, userId: userInfo._id });
+		}
+		const lastTypingTime = new Date().getTime();
+
+		setTimeout(() => {
+			const currentTime = new Date().getTime();
+			if ( typing && ((currentTime - lastTypingTime) >= TIMERLENGTH)) {
+				socket.emit("stop typing", {
+					room: selectedChat._id,
+					userId: userInfo._id,
+				});
+				setTyping(false);
+			}
+		}, TIMERLENGTH);
+	};
 
 	const handleSendMessage = async (e) => {
 		const body = {
@@ -93,6 +127,10 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 		if (newMessages && (e.type === "click" || e.key === "Enter")) {
 			try {
 				setNewMessages("");
+				socket.emit("stop typing", {
+					room: selectedChat._id,
+					userId: userInfo._id,
+				});
 				const lastMessage = await sendMessage(body).unwrap();
 				socket.emit("new message", lastMessage);
 				setMessages([...messages, lastMessage]);
@@ -168,7 +206,22 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 								<ScrollableChat messages={messages} />
 							</div>
 						)}
-						<FormControl onKeyDown={handleSendMessage} isRequired mt={3} display="flex" alignItems="center">
+						{isTyping && 
+							<div>
+								<Lottie 
+									options={defaultOptions}
+									width={60}
+									style={{marginLeft: "36px"}}
+								/>
+							</div>
+						}
+						<FormControl
+							onKeyDown={handleSendMessage}
+							isRequired
+							mt={3}
+							display="flex"
+							alignItems="center"
+						>
 							<Input
 								variant="filled"
 								bg="#E0E0E0"
@@ -176,7 +229,17 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 								autoComplete="off"
 								onChange={(e) => typingHandler(e)}
 								value={newMessages}
-							/>{ loadingSend ? <Spinner size="lg" marginLeft={2} /> :<ArrowUpIcon boxSize={6} marginLeft={2} onClick={handleSendMessage} cursor="pointer" />}
+							/>
+							{loadingSend ? (
+								<Spinner size="lg" marginLeft={2} />
+							) : (
+								<ArrowUpIcon
+									boxSize={6}
+									marginLeft={2}
+									onClick={handleSendMessage}
+									cursor="pointer"
+								/>
+							)}
 						</FormControl>
 					</Box>
 				</>

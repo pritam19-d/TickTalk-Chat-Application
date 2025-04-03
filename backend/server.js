@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import path from "path";
 dotenv.config();
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
@@ -22,10 +23,6 @@ app.use(express.urlencoded({ extended: true }));
 //Cookie parser middleware
 app.use(cookieParser());
 
-app.get("/", (req, res) => {
-	res.send("API is Running.");
-});
-
 app.use("/api/users", userRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
@@ -34,6 +31,19 @@ app.use("/api/upload", uploadRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
+const __dirname = path.resolve(); //Set the __dirname to current directory
+app.use("/uploads", express.static(path.join(__dirname, "/uploads")))
+
+if (process.env.NODE_ENV === "production"){
+  //set static folder
+  app.use(express.static(path.join(__dirname, "/frontend/build")))
+  //any route that is not api will be directed to index.html
+  app.get("*", (req,res)=> res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html")))
+} else {
+  app.get("/", (req,res)=>{
+    res.send("Api is running..")
+  });
+}
 const server = app.listen(PORT, () =>
 	console.log(`Server is up on port ${PORT}`.blue.bold.underline)
 );
@@ -41,7 +51,7 @@ const server = app.listen(PORT, () =>
 const io = new Server(server, {
 	pingTimeout: 60000,
 	cors: {
-		origin: ["http://localhost:3000"],
+		origin: ["http://localhost:3000", "https://ticktalk-chat-platform.onrender.com"],
 	},
 });
 
@@ -56,13 +66,15 @@ io.on("connection", (socket) => {
 			console.log("User joined room-", room);
 		}
 	});
+  socket.on("typing", ({room, userData})=> socket.in(room).emit("typing", {userData}))
+  socket.on("stop typing", ({room, userData})=> socket.in(room).emit("stop typing", {userData}))
   socket.on("new message", (newMessageReceived) =>{
     const chat = newMessageReceived.chat;
     if(!chat.users) return console.log("server.js @line 62-chat.users is not defined");
 
     chat.users.forEach( user => {
       if(user._id === newMessageReceived.sender._id) return;
-      socket.in(user._id).emit("message received", newMessageReceived)
+      socket.in(user._id).emit("message received", newMessageReceived);
     });
     
   })
