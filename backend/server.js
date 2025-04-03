@@ -44,7 +44,7 @@ if (process.env.NODE_ENV === "production"){
     res.send("Api is running..")
   });
 }
-const server = app.listen(PORT, () =>
+const server = app.listen(PORT, "0.0.0.0", () =>
 	console.log(`Server is up on port ${PORT}`.blue.bold.underline)
 );
 
