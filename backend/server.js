@@ -69,8 +69,8 @@ io.on("connection", (socket) => {
 			console.log("User joined room-", room);
 		}
 	});
-  socket.on("typing", (room, userData)=> socket.in(room).emit("typing", userData))
-  socket.on("stop typing", (room, userData)=> socket.in(room).emit("stop typing", userData))
+  socket.on("typing", (room, userData)=> socket.in(room).emit("typing", userData, room))
+  socket.on("stop typing", (room, userData)=> socket.in(room).emit("stop typing", userData, room))
   socket.on("new message", (newMessageReceived) =>{
     const chat = newMessageReceived.chat;
     if(!chat.users) return console.log("server.js @line 62-chat.users is not defined");
