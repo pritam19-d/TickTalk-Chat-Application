@@ -12,7 +12,7 @@ const UserListItem = ({ user, refreshChats, headerClose, setSelectedChat }) => {
     try {
       const chatData = await createChat({"userId": user._id}).unwrap()
       refreshChats();
-      setSelectedChat(chatData?._id);
+      setSelectedChat(chatData);
       headerClose();
     } catch (err) {
       toast({

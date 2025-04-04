@@ -51,7 +51,10 @@ const server = app.listen(PORT, "0.0.0.0", () =>
 const io = new Server(server, {
 	pingTimeout: 60000,
 	cors: {
-		origin: ["https://ticktalk-chat-platform.onrender.com"],
+		origin: "*",
+    methods: ["GET", "POST", "PUT"],
+    allowedHeaders: "*",
+    credentials: true,
 	},
 });
 
@@ -76,7 +79,10 @@ io.on("connection", (socket) => {
       if(user._id === newMessageReceived.sender._id) return;
       socket.in(user._id).emit("message received", newMessageReceived);
     });
-    
+  });
+  socket.off("setup", ()=>{
+    console.log("User Disconnected")
+    socket.leave(userData._id)
   })
 	// console.log(`connect: ${socket.id}`);
 });
