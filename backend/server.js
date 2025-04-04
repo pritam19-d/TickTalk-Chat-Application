@@ -11,7 +11,7 @@ import chatRoutes from "./routes/chatRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 10000;
 
 connectDB(); //connect to MongoDB database
 
@@ -51,7 +51,7 @@ const server = app.listen(PORT, "0.0.0.0", () =>
 const io = new Server(server, {
 	pingTimeout: 60000,
 	cors: {
-		origin: ["http://localhost:3000", "https://ticktalk-chat-platform.onrender.com"],
+		origin: ["https://ticktalk-chat-platform.onrender.com"],
 	},
 });
 
