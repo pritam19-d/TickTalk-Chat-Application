@@ -71,18 +71,13 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 	}, []);
 
 	useEffect(() => {
+		typing && setIsTyping(false)
 		fetchAllMessage(selectedChat);
 		socket.emit("setup", userInfo);
 		socket.on("connected", () => setSocketConnected(true));
 		socket.emit("join chat", selectedChat?._id);
-		socket.on(
-			"typing",
-			({ userId }) => {userId !== userInfo._id && setIsTyping(true)}
-		);
-		socket.on(
-			"stop typing",
-			({ userId }) => {userId !== userInfo._id && setIsTyping(false)}
-		);
+		socket.on("typing",(userId, room) => (selectedChat?._id === room) && (userId !== userInfo._id) && setIsTyping(true));
+		socket.on("stop typing",(userId, room) => (typing && selectedChat?._id) === (room && userId !== userInfo._id) && setIsTyping(false));
 	}, [selectedChat, userInfo]);
 
 	useEffect(() => {
@@ -103,17 +98,14 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 
 		if (!typing) {
 			setTyping(true);
-			socket.emit("typing", { room: selectedChat._id, userId: userInfo._id });
+			socket.emit("typing", selectedChat._id, userInfo._id);
 		}
 		const lastTypingTime = new Date().getTime();
 
 		setTimeout(() => {
 			const currentTime = new Date().getTime();
-			if ( typing && ((currentTime - lastTypingTime) >= TIMERLENGTH)) {
-				socket.emit("stop typing", {
-					room: selectedChat._id,
-					userId: userInfo._id,
-				});
+			if (typing && currentTime - lastTypingTime >= TIMERLENGTH) {
+				socket.emit("stop typing", selectedChat._id, userInfo._id);
 				setTyping(false);
 			}
 		}, TIMERLENGTH);
@@ -127,10 +119,7 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 		if (newMessages && (e.type === "click" || e.key === "Enter")) {
 			try {
 				setNewMessages("");
-				socket.emit("stop typing", {
-					room: selectedChat._id,
-					userId: userInfo._id,
-				});
+				socket.emit("stop typing", selectedChat._id,userInfo._id);
 				const lastMessage = await sendMessage(body).unwrap();
 				socket.emit("new message", lastMessage);
 				setMessages([...messages, lastMessage]);
@@ -206,15 +195,15 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 								<ScrollableChat messages={messages} />
 							</div>
 						)}
-						{isTyping && 
+						{isTyping && (
 							<div>
-								<Lottie 
+								<Lottie
 									options={defaultOptions}
 									width={60}
-									style={{marginLeft: "36px"}}
+									style={{ marginLeft: "36px" }}
 								/>
 							</div>
-						}
+						)}
 						<FormControl
 							onKeyDown={handleSendMessage}
 							isRequired
