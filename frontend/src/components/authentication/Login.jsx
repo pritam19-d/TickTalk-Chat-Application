@@ -21,45 +21,50 @@ const Login = () => {
 	const [password, setPassword] = useState("");
 
 	const dispatch = useDispatch();
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
-  const [login, { isLoading }] = useLoginMutation()
+	const [login, { isLoading }] = useLoginMutation();
 
-	const { userInfo } = useSelector((state) => state.auth)
+	const { userInfo } = useSelector((state) => state.auth);
 
-	const { search } = useLocation()
-  const sp = new URLSearchParams(search)
-  const redirect = sp.get("redirect") || "/chats"
+	const { search } = useLocation();
+	const sp = new URLSearchParams(search);
+	const redirect = sp.get("redirect") || "/chats";
 
 	useEffect(() => {
-    if (userInfo) {
-      navigate(redirect)
-    }
-  }, [userInfo, redirect, navigate])
+		if (userInfo) {
+			navigate(redirect);
+		}
+	}, [userInfo, redirect, navigate]);
 
-	const toast = useToast()
-	const showToast = (title, description = "", status)=>{
+	const toast = useToast();
+	const showToast = (title, description = "", status) => {
 		return toast({
 			title: title,
 			description: description,
 			status: status,
-			duration: description==="success" ? 3000 : 5000,
+			duration: description === "success" ? 3000 : 5000,
 			isClosable: true,
-			variant : "subtle"
-		})
-	}
+			variant: "subtle",
+		});
+	};
 
-	const loginSubmitHandler = async (e)=>{
-    e.preventDefault()
-		try {
-			const res = await login({ email, password }).unwrap()
-			dispatch(setCredentials({ ...res }))
-      navigate(redirect)
-		} catch (err) {
-			showToast("Unable to Log you in!", err?.data?.message || err.error, "error")
+	const loginSubmitHandler = async (e) => {
+		if ((email && password) && (e.type === "click" || e.key === "Enter")) {
+			e.preventDefault();
+			try {
+				const res = await login({ email, password }).unwrap();
+				dispatch(setCredentials({ ...res }));
+				navigate(redirect);
+			} catch (err) {
+				showToast(
+					"Unable to Log you in!",
+					err?.data?.message || err.error,
+					"error"
+				);
+			}
 		}
-  }
-
+	};
 
 	return (
 		<VStack spacing="5px">
@@ -80,6 +85,7 @@ const Login = () => {
 						placeholder="Type Your Password"
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
+						onKeyDown={loginSubmitHandler}
 					/>
 					<InputRightElement width="4.5rem">
 						<Button h="1.75" size="sm" onClick={() => setShow(!show)}>
@@ -89,7 +95,14 @@ const Login = () => {
 				</InputGroup>
 			</FormControl>
 			<Text color="red">* Marked fields are the mandatory field.</Text>
-			<Button colorScheme="blue" w="60%" mt="15" onClick={loginSubmitHandler} isLoading={isLoading}>
+			<Button
+				colorScheme="blue"
+				w="60%"
+				mt="15"
+				onClick={loginSubmitHandler}
+				isLoading={isLoading}
+				disabled={!email || !password}
+			>
 				Sign In
 			</Button>
 		</VStack>

@@ -28,10 +28,12 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 	const [messages, setMessages] = useState([]);
 	const [isLoading, setLoading] = useState(false);
 	const [socketConnected, setSocketConnected] = useState(false);
-	const [typing, setTyping] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
 
-	const socket = io(ENDPOINT);
+	const socket = io(ENDPOINT, {
+		transports: ["polling", "websocket"],
+		withCredentials: true
+	});
 	const toast = useToast();
 
 	const defaultOptions = {
@@ -51,6 +53,7 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 				setLoading(true);
 				const res = await axios.get(`${MESSAGE_URL}/${selectedChat._id}`);
 				setMessages(res.data);
+				socket.emit("join chat", selectedChat?._id);
 			} catch (err) {
 				console.log(err);
 				toast({
@@ -67,26 +70,33 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 	};
 
 	useEffect(() => {
-		fetchAllMessage(selectedChat);
+		socket.emit("setup", userInfo);
+		socket.on("connect", () => setSocketConnected(true));
 	}, []);
 
-	useEffect(() => {
-		typing && setIsTyping(false)
+	useEffect(()=>{
 		fetchAllMessage(selectedChat);
-		socket.emit("setup", userInfo);
-		socket.on("connected", () => setSocketConnected(true));
-		socket.emit("join chat", selectedChat?._id);
-		socket.on("typing",(userId, room) => (selectedChat?._id === room) && (userId !== userInfo._id) && setIsTyping(true));
-		socket.on("stop typing",(userId, room) => (typing && selectedChat?._id) === (room && userId !== userInfo._id) && setIsTyping(false));
-	}, [selectedChat, userInfo]);
+	}, [selectedChat])
+
+	useEffect(() => {
+		socket.on(
+			"typingRecvd",
+			(userId, room) =>
+				selectedChat?._id === room &&
+				userId !== userInfo._id &&
+				!isTyping && setIsTyping(true)
+		);
+		socket.on( "stopTypingRecvd", (userId, room) => 
+			(isTyping && (selectedChat?._id === room) && userId !== userInfo._id) && setIsTyping(false)
+		)
+	});
 
 	useEffect(() => {
 		socket.on("message received", (newMessageReceived) => {
 			if (selectedChat?._id !== newMessageReceived.chat._id) {
 				// send notification
 			} else {
-				setMessages((prevMessage) => [...prevMessage, newMessageReceived]);
-				// messages.push(newMessageReceived)
+				setMessages([...messages, newMessageReceived]);
 			}
 		});
 	});
@@ -96,17 +106,15 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 
 		if (!socketConnected) return;
 
-		if (!typing) {
-			setTyping(true);
-			socket.emit("typing", selectedChat._id, userInfo._id);
+		if (!isTyping) {
+			socket.emit("typingSent", selectedChat._id, userInfo._id);
 		}
 		const lastTypingTime = new Date().getTime();
 
 		setTimeout(() => {
 			const currentTime = new Date().getTime();
-			if (typing && currentTime - lastTypingTime >= TIMERLENGTH) {
-				socket.emit("stop typing", selectedChat._id, userInfo._id);
-				setTyping(false);
+			if (currentTime - lastTypingTime >= TIMERLENGTH) {
+				socket.emit("stopTypingSent", selectedChat._id, userInfo._id);
 			}
 		}, TIMERLENGTH);
 	};
@@ -119,7 +127,7 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 		if (newMessages && (e.type === "click" || e.key === "Enter")) {
 			try {
 				setNewMessages("");
-				socket.emit("stop typing", selectedChat._id,userInfo._id);
+				socket.emit("stopTypingSent", selectedChat._id, userInfo._id);
 				const lastMessage = await sendMessage(body).unwrap();
 				socket.emit("new message", lastMessage);
 				setMessages([...messages, lastMessage]);

@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import path from "path";
 dotenv.config();
 import cookieParser from "cookie-parser";
+import http from "http";
+import cors from "cors"
 import { Server } from "socket.io";
 import connectDB from "./config/db.js";
 import colors from "colors";
@@ -11,17 +13,22 @@ import chatRoutes from "./routes/chatRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
+import corsOptions from "./config/corsConfig.js";
 const PORT = process.env.PORT || 10000;
 
 connectDB(); //connect to MongoDB database
 
 const app = express();
 
+//Cookie parser middleware
+app.use(cookieParser());
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-//Cookie parser middleware
-app.use(cookieParser());
 
 app.use("/api/users", userRoutes);
 app.use("/api/chats", chatRoutes);
@@ -44,15 +51,22 @@ if (process.env.NODE_ENV === "production"){
     res.send("Api is running..")
   });
 }
+
+// const httpServer = http.createServer(app);
+
 const server = app.listen(PORT, "0.0.0.0", () =>
 	console.log(`Server is up on port ${PORT}`.blue.bold.underline)
 );
 
+// const server = httpServer.listen(PORT, "0.0.0.0", () => {
+// 	console.log(`🚀 Server is running on port ${PORT}`.blue.bold.underline);
+// });
+
 const io = new Server(server, {
 	pingTimeout: 60000,
 	cors: {
-		origin: ["http://localhost:3003", "https://ticktalk-chat-platform.onrender.com"],
-    methods: ["GET", "POST", "PUT"],
+		origin: ["http://localhost:3000"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: "*",
     credentials: true,
 	},
@@ -69,8 +83,9 @@ io.on("connection", (socket) => {
 			console.log("User joined room-", room);
 		}
 	});
-  socket.on("typing", (room, userData)=> socket.in(room).emit("typing", userData, room))
-  socket.on("stop typing", (room, userData)=> socket.in(room).emit("stop typing", userData, room))
+  socket.on("typingSent", (room, userData)=> {socket.to(room).emit("typingRecvd", userData, room), console.log("start typing called -", userData);
+  })
+  socket.on("stopTypingSent", (room, userData)=> {socket.to(room).emit("stopTypingRecvd", userData, room), console.log("Stopped Typing called by- ", userData)})
   socket.on("new message", (newMessageReceived) =>{
     const chat = newMessageReceived.chat;
     if(!chat.users) return console.log("server.js @line 62-chat.users is not defined");
@@ -84,5 +99,4 @@ io.on("connection", (socket) => {
     console.log("User Disconnected")
     socket.leave(userData._id)
   })
-	// console.log(`connect: ${socket.id}`);
 });

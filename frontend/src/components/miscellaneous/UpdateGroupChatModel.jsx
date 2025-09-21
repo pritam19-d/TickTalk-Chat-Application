@@ -134,7 +134,7 @@ const UpdateGroupChatModel = ({ currChat, setCurrChat, refreshAllChat }) => {
 		} catch (err) {
 			toast({
 				title: "Unable to leave!",
-				description: `Could not Remove you from the group due to "${err?.data?.message || err?.error}".`,
+				description: `Could not Remove yourself from the group due to "${err?.data?.message || err?.error}".`,
 				status: "error",
 			});
 		}
