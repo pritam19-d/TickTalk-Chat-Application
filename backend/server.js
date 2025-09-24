@@ -72,27 +72,52 @@ const io = new Server(server, {
 	},
 });
 
+const typingTimers = {};
+
 io.on("connection", (socket) => {
 	socket.on("setup", (userData) => {
 		socket.join(userData._id);
 		socket.emit("connected");
 	});
-	socket.on("join chat", (room) => {
-		if (room) {
-			socket.join(room);
-			console.log("User joined room-", room);
+  
+	socket.on("join chat", (newRoom) => {
+		if (newRoom) {
+      for (let room of socket.rooms) {
+        if (room !== socket.id) {
+          socket.leave(room);
+        }
+      }
+			socket.join(newRoom);
+			// console.log("User joined room-", newRoom);
+      // console.log(Array.from(socket.rooms))
 		}
 	});
-  socket.on("typingSent", (room, userData)=> {socket.to(room).emit("typingRecvd", userData, room), console.log("start typing called -", userData);
+  socket.on("typingSent", (room, userData)=> {
+    socket.to(room).emit("typingRecvd", userData, room);
+    // console.log("start typing called -", userData);
+
+    if (!typingTimers[room]) typingTimers[room] = {};
+    
+    // Clear previous timer if exists
+    if (typingTimers[room][userData.id]) {
+      clearTimeout(typingTimers[room][userData.id]);
+    }
+
+    // Set new timer for 3s
+    typingTimers[room][userData.id] = setTimeout(() => {
+      socket.to(room).emit("stopTypingRecvd", userData, room);
+      // console.log("stop typing emitted -", userData);
+      delete typingTimers[room][userData.id]; // cleanup
+    }, 3000);
   })
-  socket.on("stopTypingSent", (room, userData)=> {socket.to(room).emit("stopTypingRecvd", userData, room), console.log("Stopped Typing called by- ", userData)})
-  socket.on("new message", (newMessageReceived) =>{
+  socket.on("stopTypingSent", (room, userData)=> socket.to(room).emit("stopTypingRecvd", userData, room));
+  socket.on("new message", (newMessageReceived, userData) =>{
     const chat = newMessageReceived.chat;
-    if(!chat.users) return console.log("server.js @line 62-chat.users is not defined");
+    if(!chat.users) return console.log("server.js @line 115-chat.users is not defined");
 
     chat.users.forEach( user => {
-      if(user._id === newMessageReceived.sender._id) return;
-      socket.in(user._id).emit("message received", newMessageReceived);
+      if(user._id === userData) return;
+      socket.to(chat._id).emit("message received", newMessageReceived);
     });
   });
   socket.off("setup", ()=>{

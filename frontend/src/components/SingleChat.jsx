@@ -29,11 +29,15 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 	const [isLoading, setLoading] = useState(false);
 	const [socketConnected, setSocketConnected] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
+	const [typing, setTyping] = useState(false);
 
 	const socket = io(ENDPOINT, {
 		transports: ["polling", "websocket"],
 		withCredentials: true
 	});
+
+	let currentTime;
+	let lastTypingTime;
 	const toast = useToast();
 
 	const defaultOptions = {
@@ -53,7 +57,6 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 				setLoading(true);
 				const res = await axios.get(`${MESSAGE_URL}/${selectedChat._id}`);
 				setMessages(res.data);
-				socket.emit("join chat", selectedChat?._id);
 			} catch (err) {
 				console.log(err);
 				toast({
@@ -71,34 +74,38 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 
 	useEffect(() => {
 		socket.emit("setup", userInfo);
-		socket.on("connect", () => setSocketConnected(true));
-	}, []);
+		socket.on("connected", () => setSocketConnected(true));
+	}, [userInfo, socket]);
 
 	useEffect(()=>{
+		setIsTyping(false);
+		socket.emit("join chat", selectedChat?._id);
 		fetchAllMessage(selectedChat);
-	}, [selectedChat])
+		socket.on("typingRecvd", (userData, room)=> {
+			// console.log(userData, " started typing in ", room);
+			userData !== userInfo._id && setIsTyping(true);
+		})
 
-	useEffect(() => {
-		socket.on(
-			"typingRecvd",
-			(userId, room) =>
-				selectedChat?._id === room &&
-				userId !== userInfo._id &&
-				!isTyping && setIsTyping(true)
-		);
-		socket.on( "stopTypingRecvd", (userId, room) => 
-			(isTyping && (selectedChat?._id === room) && userId !== userInfo._id) && setIsTyping(false)
-		)
-	});
+		socket.on("stopTypingRecvd", (userData, room)=>{
+			// console.log(userData, " stopped typing in ", room);
+      userData !== userInfo._id && setIsTyping(false);
+		})
+		
+    return () => {
+      socket.off("typingRecvd");
+      socket.off("stopTypingRecvd");
+    };
+	}, [selectedChat])
 
 	useEffect(() => {
 		socket.on("message received", (newMessageReceived) => {
 			if (selectedChat?._id !== newMessageReceived.chat._id) {
 				// send notification
 			} else {
-				setMessages([...messages, newMessageReceived]);
+				newMessageReceived.sender._id !== userInfo._id && setMessages((prev)=> [...prev, newMessageReceived]);
 			}
 		});
+		console.log(socket.rooms)
 	});
 
 	const typingHandler = (e) => {
@@ -106,15 +113,16 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 
 		if (!socketConnected) return;
 
-		if (!isTyping) {
+		if (!typing) {
+			setTyping(true)
 			socket.emit("typingSent", selectedChat._id, userInfo._id);
 		}
-		const lastTypingTime = new Date().getTime();
+		lastTypingTime = new Date().getTime();
 
 		setTimeout(() => {
-			const currentTime = new Date().getTime();
-			if (currentTime - lastTypingTime >= TIMERLENGTH) {
-				socket.emit("stopTypingSent", selectedChat._id, userInfo._id);
+			currentTime = new Date().getTime();
+			if (currentTime - lastTypingTime >= TIMERLENGTH && typing) {
+				setTyping(false)
 			}
 		}, TIMERLENGTH);
 	};
@@ -126,11 +134,11 @@ const SingleChat = ({ selectedChat, setCurrChat, refresh }) => {
 		};
 		if (newMessages && (e.type === "click" || e.key === "Enter")) {
 			try {
-				setNewMessages("");
 				socket.emit("stopTypingSent", selectedChat._id, userInfo._id);
 				const lastMessage = await sendMessage(body).unwrap();
-				socket.emit("new message", lastMessage);
-				setMessages([...messages, lastMessage]);
+				setNewMessages("");
+				socket.emit("new message", lastMessage, userInfo._id);
+				setMessages((prev)=> [...prev, lastMessage]);
 			} catch (err) {
 				toast({
 					title: "Failed to send the message!",
