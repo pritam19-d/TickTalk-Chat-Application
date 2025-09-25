@@ -1,4 +1,5 @@
 import path from "path"
+import fs from "fs";
 import express from "express"
 import multer from "multer"
 import dotenv from "dotenv";
@@ -23,19 +24,22 @@ const storage = multer.diskStorage({
   }
 })
 
-function checkFileType(file, cb) {
-  const filetypes = /jpg|jpeg|png/
+function fileFilter(req, file, cb) {
+  const filetypes = /jpe?g|png|webp/;
+  const mimetypes = /image\/jpe?g|image\/png|image\/webp/;
+
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase())
-  const mimetype = filetypes.test(file.mimetype)
+  const mimetype = mimetypes.test(file.mimetype)
   if (extname && mimetype) {
-    return cb(null, true)
+    cb(null, true)
   } else {
-    cb("Images only!")
+    cb(new Error("Images only!"), false);
   }
 }
 
 const upload = multer({
-  storage
+  storage,
+  fileFilter,
 })
 
 router.post("/", upload.single("image"), async (req, res)=>{
@@ -44,7 +48,15 @@ router.post("/", upload.single("image"), async (req, res)=>{
     // Upload the image to Cloudinary
     const result = await cloudinary.uploader.upload(file, {
       folder: 'profile_pictures', // specify folder in Cloudinary
+      transformation: [
+        { width: 1000, crop: "scale" },
+        { quality: "auto" },
+        { fetch_format: "auto" }
+      ]
     });
+    
+    fs.unlinkSync(filePath); // Delete the local file after upload
+
     res.status(200).json({
       message: "Image Uploaded",
       image: `/${req.file.path}`,
